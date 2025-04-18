@@ -128,4 +128,4 @@ searchBtn.addEventListener("click", () => {
 });
 
 // Optionally, fetch default city data on load
-fetchCityData("Karjat");
+// fetchCityData("Karjat");
