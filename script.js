@@ -1,27 +1,24 @@
 const apiKey = "7d5e74e7b112e34001dc87b79a2fc7c3";
-const weatherApiUrl = "https://api.openweathermap.org/data/2.5/weather?units=metric&q=";
+const weatherApiUrl = "https://api.openweathermap.org/data/2.5/weather?units=metric";
 const weatherIcon = document.querySelector(".weather-icon");
 const AQIFrontView = document.getElementById("AQI");
+const citySelectContainer = document.getElementById("city-select-container"); // Add a container in your HTML for the dropdown
 
 let cityData = {}; // Unified data object to hold all fetched info
 
-async function fetchCityData(city) {
+async function fetchCityDataByCoords(lat, lon, cityName) {
   try {
-    // Fetch weather data from OpenWeatherMap
-    const weatherResponse = await fetch(weatherApiUrl + city + `&appid=${apiKey}`);
+    // Fetch weather data using coordinates
+    const weatherResponse = await fetch(`${weatherApiUrl}&lat=${lat}&lon=${lon}&appid=${apiKey}`);
     if (weatherResponse.status == 404) {
       document.querySelector(".error").style.display = "block";
       document.querySelector(".weather").style.display = "none";
-      AQIFrontView.innerHTML = ""; // Clear AQI display if any
+      AQIFrontView.innerHTML = "";
       return;
     }
     const weatherData = await weatherResponse.json();
 
-    // Extract city name, coordinates for further API calls
-    const cityName = weatherData.name;
-    const { lat, lon } = weatherData.coord;
-
-    // Fetch AQI data from Weatherbit API using city name from weather API
+    // Fetch AQI data from Weatherbit API using city name
     const airRes = await fetch(
       `https://api.weatherbit.io/v2.0/current/airquality?city=${cityName}&key=bc5c2e9a675441e59d93ab9525554ebd`
     );
@@ -34,14 +31,12 @@ async function fetchCityData(city) {
     const sunRes = await fetch(sunriseSunsetUrl);
     const sunData = sunRes.ok ? await sunRes.json() : null;
 
-    // Convert ISO times to local time strings
     let sunriseLocal = "N/A", sunsetLocal = "N/A";
     if (sunData && sunData.status === "OK") {
       sunriseLocal = new Date(sunData.results.sunrise).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       sunsetLocal = new Date(sunData.results.sunset).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
-    // Store all fetched data in cityData
     cityData = {
       weather: weatherData,
       aqi,
@@ -50,20 +45,70 @@ async function fetchCityData(city) {
       sunset: sunsetLocal,
     };
 
-    // Display all data
     displayWeather(cityData);
     displayAQI(cityData.aqi, cityData.airStatus);
     displaySunriseSunset(cityData.sunrise, cityData.sunset);
 
-    // Show weather container and hide error
     document.querySelector(".weather").style.display = "block";
     document.querySelector(".error").style.display = "none";
+    citySelectContainer.innerHTML = ""; // Clear city selection dropdown if shown
 
   } catch (error) {
     console.error("Error fetching city data:", error);
     document.querySelector(".error").style.display = "block";
     document.querySelector(".weather").style.display = "none";
     AQIFrontView.innerHTML = "";
+  }
+}
+
+async function fetchCityData(city) {
+  try {
+    // Use Geocoding API to resolve city name
+    const geoApiUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(city)}&limit=5&appid=${apiKey}`;
+    const geoRes = await fetch(geoApiUrl);
+    const geoData = await geoRes.json();
+
+    if (!geoData || geoData.length === 0) {
+      document.querySelector(".error").style.display = "block";
+      document.querySelector(".weather").style.display = "none";
+      AQIFrontView.innerHTML = "";
+      citySelectContainer.innerHTML = "";
+      return;
+    }
+
+    // If multiple cities found, let user select
+    if (geoData.length > 1) {
+      citySelectContainer.innerHTML = `
+        <label for="city-select">Multiple matches found. Please select:</label>
+        <select id="city-select">
+          ${geoData.map((c, i) => `
+            <option value="${i}">
+              ${c.name}${c.state ? ', ' + c.state : ''}, ${c.country}
+            </option>
+          `).join('')}
+        </select>
+        <button id="city-select-btn">Go</button>
+      `;
+      document.getElementById("city-select-btn").onclick = () => {
+        const idx = document.getElementById("city-select").value;
+        const selected = geoData[idx];
+        fetchCityDataByCoords(selected.lat, selected.lon, selected.name);
+      };
+      document.querySelector(".weather").style.display = "none";
+      AQIFrontView.innerHTML = "";
+      return;
+    }
+
+    // Only one city found, proceed
+    const selected = geoData[0];
+    fetchCityDataByCoords(selected.lat, selected.lon, selected.name);
+
+  } catch (error) {
+    console.error("Error fetching city data:", error);
+    document.querySelector(".error").style.display = "block";
+    document.querySelector(".weather").style.display = "none";
+    AQIFrontView.innerHTML = "";
+    citySelectContainer.innerHTML = "";
   }
 }
 
@@ -85,15 +130,13 @@ function displayWeather(data) {
   document.querySelector(".humidity").innerHTML = data.weather.main.humidity + "%";
   document.querySelector(".wind").innerHTML = Math.round(data.weather.wind.speed * 3.6) + " km/h";
 
-  // Update weather icon based on weather condition
   const mainWeather = data.weather.weather[0].main;
   if (mainWeather === "Clouds") weatherIcon.src = "img/clouds.png";
   else if (mainWeather === "Clear") weatherIcon.src = "img/clear.png";
   else if (mainWeather === "Rain") weatherIcon.src = "img/rain.png";
   else if (mainWeather === "Drizzle") weatherIcon.src = "img/drizzle.png";
   else if (mainWeather === "Mist") weatherIcon.src = "img/mist.png";
-  else weatherIcon.src = ""; // Default or clear icon
-
+  else weatherIcon.src = "";
 }
 
 function displayAQI(aqi, airStatus) {

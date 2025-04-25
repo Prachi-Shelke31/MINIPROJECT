@@ -133,3 +133,72 @@
   .AQI>h2{
     font-size: 1rem;
   }
+/* Container for city selection dropdown */
+#city-select-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  width: 100vw;
+  margin: 15px 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #333;
+}
+
+/* Label styling */
+#city-select-container label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Select dropdown styling */
+#city-select-container select {
+  max-width: 800px;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 16px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  background-color: #fff;
+  transition: border-color 0.3s ease;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+/* Select focus state */
+#city-select-container select:focus {
+  outline: none;
+  border-color: #1e90ff; /* Dodger Blue */
+  box-shadow: 0 0 5px rgba(30, 144, 255, 0.5);
+}
+
+/* Button next to select */
+#city-select-container button {
+  margin-top: 10px;
+  padding: 10px 20px;
+  max-width: 400px;
+  background-color: #1e90ff;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  display: block;
+  width: 100%;
+}
+
+/* Button hover effect */
+#city-select-container button:hover {
+  background-color: #0f6cd1;
+}
+
+/* Responsive: keep button and select full width on small screens */
+@media (min-width: 480px) {
+  #city-select-container {
+    max-width: 100%;
+  }
+}
